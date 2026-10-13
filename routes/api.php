@@ -33,6 +33,21 @@ $pageKey = function (App $kirby, User $user, array $input): string {
 
 return [
 	[
+		'pattern' => 'editoria11y/result',
+		'method'  => 'GET',
+		'action'  => function () use ($pageKey) {
+			$key    = $pageKey($this->kirby(), $this->user(), $this->requestQuery());
+			$result = Results::find($key);
+
+			return [
+				'errors'   => isset($result['errors']) ? (int)$result['errors'] : null,
+				'warnings' => isset($result['warnings']) ? (int)$result['warnings'] : null,
+				'checked'  => $result['checked'] ?? null,
+				'skipped'  => $result['skipped'] ?? false,
+			];
+		},
+	],
+	[
 		'pattern' => 'editoria11y/button',
 		'method'  => 'GET',
 		'action'  => function () {
@@ -58,7 +73,7 @@ return [
 			if (
 				preg_match('/^[A-Z0-9_]{1,64}$/', $test) !== 1 ||
 				preg_match('/^[\w-]{1,128}$/', $id) !== 1 ||
-				in_array($action, ['ok', 'hide', 'reset'], true) === false
+				in_array($action, ['ok', 'reset'], true) === false
 			) {
 				throw new InvalidArgumentException('Invalid dismissal');
 			}

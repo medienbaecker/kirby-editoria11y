@@ -7,7 +7,6 @@ return [
 	'medienbaecker.editoria11y.scanned'         => '{count} Seiten geprüft',
 	'medienbaecker.editoria11y.pages'           => 'Seiten',
 	'medienbaecker.editoria11y.empty'           => 'Keine Seiten',
-	'medienbaecker.editoria11y.stats.pages'     => 'Seiten mit Meldungen',
 	'medienbaecker.editoria11y.stats.errors'    => 'Fehler',
 	'medienbaecker.editoria11y.stats.warnings'  => 'Warnungen',
 	'medienbaecker.editoria11y.stats.checked'   => 'Geprüft',
@@ -20,4 +19,5 @@ return [
 	'medienbaecker.editoria11y.column.warnings' => 'Warnungen',
 	'medienbaecker.editoria11y.column.checked'  => 'Zuletzt geprüft',
 	'medienbaecker.editoria11y.button.issues'   => [1 => '{count} Barrierefreiheits-Meldung', '{count} Barrierefreiheits-Meldungen'],
+	'medienbaecker.editoria11y.stats.done' => 'Seiten ohne Meldungen',
 ];

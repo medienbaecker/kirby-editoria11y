@@ -9,7 +9,7 @@
 							:icon="scanning ? 'cancel' : 'refresh'"
 							:theme="scanning ? 'negative' : null"
 							:text="scanLabel"
-							:disabled="rows.length === 0"
+							:disabled="live.length === 0"
 							variant="filled"
 							size="sm"
 							responsive="text"
@@ -21,7 +21,22 @@
 		</k-header>
 
 		<k-section>
-			<k-stats :reports="reports" size="medium" />
+			<dl class="k-stats" data-size="medium">
+				<div
+					v-for="report in reports"
+					:key="report.key"
+					class="k-stat"
+					:data-theme="report.theme"
+				>
+					<dt class="k-stat-label">
+						<k-icon :type="report.icon" />
+						{{ report.label }}
+					</dt>
+					<dd class="k-stat-value">
+						<editoria11y-odometer :value="report.value" /><template v-if="report.total !== undefined">/{{ report.total }}</template>
+					</dd>
+				</div>
+			</dl>
 		</k-section>
 
 		<k-section :headline="$t('medienbaecker.editoria11y.pages')">
@@ -51,18 +66,23 @@
 				<k-pagination
 					v-bind="pagination"
 					:details="true"
-					:total="rows.length"
+					:total="live.length"
 					@paginate="pagination.page = $event.page"
 				/>
 			</footer>
 		</k-section>
+
 	</k-panel-inside>
 </template>
 
 <script>
 import check from "../check.js";
+import Editoria11yOdometer from "./Editoria11yOdometer.vue";
 
 export default {
+	components: {
+		"editoria11y-odometer": Editoria11yOdometer,
+	},
 	props: {
 		rows: {
 			type: Array,
@@ -71,6 +91,8 @@ export default {
 	},
 	data() {
 		return {
+			live: this.rows.map((row) => ({ ...row })),
+			frozen: null,
 			scanning: false,
 			stopped: false,
 			done: 0,
@@ -83,35 +105,54 @@ export default {
 			},
 		};
 	},
+	beforeDestroy() {
+		this.leave();
+	},
+	beforeUnmount() {
+		this.leave();
+	},
+	watch: {
+		rows(rows) {
+			if (!this.scanning) {
+				this.live = rows.map((row) => ({ ...row }));
+			}
+		},
+	},
 	computed: {
 		checkedRows() {
-			return this.rows.filter((row) => row.checked !== null);
+			return this.live.filter((row) => row.checked !== null);
 		},
 		reports() {
-			const errors = this.sum("errors");
-			const warnings = this.sum("warnings");
-			const unchecked = this.rows.length - this.checkedRows.length;
+			const total = this.live.length;
+			const done = this.checkedRows.filter((row) => row.errors + row.warnings === 0).length;
 
 			return [
 				{
-					label: this.$t("medienbaecker.editoria11y.stats.pages"),
-					value: String(this.checkedRows.filter((row) => row.errors + row.warnings > 0).length),
-					icon: "page",
+					key: "done",
+					label: this.$t("medienbaecker.editoria11y.stats.done"),
+					value: done,
+					total,
+					icon: done === total ? "check" : "accessibility",
+					theme: done === total ? "positive" : null,
 				},
 				{
+					key: "checked",
 					label: this.$t("medienbaecker.editoria11y.stats.checked"),
-					value: `${this.checkedRows.length}/${this.rows.length}`,
-					icon: unchecked > 0 ? "clock" : "check",
+					value: this.checkedRows.length,
+					total,
+					icon: this.checkedRows.length < total ? "clock" : "checklist",
 				},
 				{
+					key: "errors",
 					label: this.$t("medienbaecker.editoria11y.stats.errors"),
-					value: String(errors),
-					icon: errors > 0 ? "alert" : "check",
+					value: this.sum("errors"),
+					icon: "alert",
 				},
 				{
+					key: "warnings",
 					label: this.$t("medienbaecker.editoria11y.stats.warnings"),
-					value: String(warnings),
-					icon: warnings > 0 ? "info" : "check",
+					value: this.sum("warnings"),
+					icon: "info",
 				},
 			];
 		},
@@ -147,7 +188,11 @@ export default {
 		sortedRows() {
 			const direction = this.sortDirection === "asc" ? 1 : -1;
 
-			return [...this.rows].sort((a, b) => {
+			if (this.frozen) {
+				return [...this.live].sort((a, b) => this.frozen.get(a.id) - this.frozen.get(b.id));
+			}
+
+			return [...this.live].sort((a, b) => {
 				if ((a.checked === null) !== (b.checked === null)) {
 					const uncheckedFirst = this.sortBy === "checked" && this.sortDirection === "asc";
 
@@ -231,38 +276,94 @@ export default {
 			this.pagination.page = 1;
 		},
 		async scan() {
-			const queue = [...this.rows];
+			const queue = [...this.sortedRows];
+			const before = new Map(queue.map((row) => [row.id, (row.errors ?? 0) + (row.warnings ?? 0)]));
+			const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			let stage = Promise.resolve();
 
-			this.scanning = true;
-			this.stopped = false;
-			this.done = 0;
-			this.total = queue.length;
+			const play = (apply, slow) => {
+				stage = stage.then(() => {
+					apply();
+					return new Promise((resolve) => setTimeout(resolve, reduced ? 0 : slow ? 220 : 25));
+				});
 
-			const refresh = setInterval(() => this.$panel.view.refresh(), 2000);
+				return stage;
+			};
 
 			const worker = async () => {
 				while (queue.length > 0 && this.stopped === false) {
 					const row = queue.shift();
 
 					await check(row, this.$panel.api);
-					this.done++;
+
+					const result = await this.$panel.api.get("editoria11y/result", {
+						page: row.page,
+						language: row.language,
+					});
+					const clean = result.checked !== null && result.errors + result.warnings === 0;
+
+					await play(() => {
+						if (result.skipped) {
+							this.live = this.live.filter((live) => live.id !== row.id);
+						} else {
+							Object.assign(row, {
+								errors: result.errors,
+								warnings: result.warnings,
+								checked: result.checked,
+							});
+
+							if (clean) {
+								this.flash(row);
+							}
+						}
+
+						this.done++;
+					}, result.errors + result.warnings < before.get(row.id));
 				}
 			};
 
-			await Promise.all(Array.from({ length: 4 }, worker));
-			clearInterval(refresh);
-			await this.$panel.reload();
+			queue.forEach((row) => (row.checked = null));
 
-			if (this.stopped === false) {
-				this.$panel.notification.success(
-					this.$t("medienbaecker.editoria11y.scanned", { count: this.done }),
-				);
+			this.frozen = new Map(queue.map((row, index) => [row.id, index]));
+			this.scanning = true;
+			this.stopped = false;
+			this.done = 0;
+			this.total = queue.length;
+
+			try {
+				await Promise.all(Array.from({ length: 4 }, worker));
+			} finally {
+				this.frozen = null;
+				this.scanning = false;
 			}
 
-			this.scanning = false;
+			if (this.destroyed) {
+				return;
+			}
+
+			if (this.stopped === false) {
+				this.$panel.notification.success(this.$t("medienbaecker.editoria11y.scanned", { count: this.done }));
+			}
+
+			await this.$panel.view.refresh();
 		},
 		stop() {
 			this.stopped = true;
+		},
+		leave() {
+			this.destroyed = true;
+			this.stopped = true;
+		},
+		flash(row) {
+			this.$nextTick(() => {
+				const tr = this.$el.querySelector(`.k-table tbody a[href$="${CSS.escape(row.link)}"]`)?.closest("tr");
+
+				if (tr) {
+					tr.classList.remove("k-editoria11y-better");
+					void tr.offsetWidth;
+					tr.classList.add("k-editoria11y-better");
+				}
+			});
 		},
 	},
 };
@@ -281,6 +382,17 @@ export default {
 }
 .k-editoria11y-view [data-align="right"] .k-editoria11y-sort {
 	justify-content: flex-end;
+}
+.k-editoria11y-better > td {
+	animation: k-editoria11y-better 600ms ease-out;
+}
+@keyframes k-editoria11y-better {
+	from {
+		background: light-dark(var(--color-green-200), var(--color-green-800));
+	}
+}
+.k-editoria11y-view .k-stat[data-theme="positive"] .k-icon {
+	color: light-dark(var(--theme-color-700), var(--theme-color-600));
 }
 .k-editoria11y-scan-frame {
 	position: fixed;

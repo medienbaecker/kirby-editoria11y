@@ -7,7 +7,6 @@ return [
 	'medienbaecker.editoria11y.scanned'         => '{count} pages checked',
 	'medienbaecker.editoria11y.pages'           => 'Pages',
 	'medienbaecker.editoria11y.empty'           => 'No pages',
-	'medienbaecker.editoria11y.stats.pages'     => 'Pages with alerts',
 	'medienbaecker.editoria11y.stats.errors'    => 'Errors',
 	'medienbaecker.editoria11y.stats.warnings'  => 'Warnings',
 	'medienbaecker.editoria11y.stats.checked'   => 'Checked',
@@ -20,4 +19,5 @@ return [
 	'medienbaecker.editoria11y.column.warnings' => 'Warnings',
 	'medienbaecker.editoria11y.column.checked'  => 'Last checked',
 	'medienbaecker.editoria11y.button.issues'   => [1 => '{count} accessibility alert', '{count} accessibility alerts'],
+	'medienbaecker.editoria11y.stats.done' => 'Pages without alerts',
 ];

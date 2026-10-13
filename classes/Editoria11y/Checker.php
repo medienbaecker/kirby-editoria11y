@@ -88,6 +88,7 @@ class Checker
 			'options' => [
 				'pepper' => 'kirby-editoria11y',
 				...$config,
+				'allowHide' => false,
 			],
 			'lang' => 'Ed11yLang' . ucfirst($language),
 			'strings' => [
@@ -108,7 +109,7 @@ class Checker
 				'api'        => $kirby->url('api') . '/editoria11y',
 				'report'     => static::showsPublishedContent($page, $contentLanguage),
 				'csrf'       => $kirby->csrf(),
-				'dismissals' => (object)Dismissals::forPage($key, $user),
+				'dismissals' => (object)Dismissals::forPage($key),
 			];
 		} catch (Throwable) {
 			// Without a working database, dismissals stay in the browser

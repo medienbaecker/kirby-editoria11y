@@ -41,6 +41,18 @@ class Results
 		return $results;
 	}
 
+	public static function find(string $page): array|null
+	{
+		$rows = Storage::database()->query(
+			'SELECT errors, warnings, checked, skipped FROM results WHERE page = ?',
+			[$page],
+			['fetch' => 'array', 'iterator' => 'array']
+		);
+		$row  = ($rows ?: [])[0] ?? null;
+
+		return $row === null ? null : [...$row, 'skipped' => (bool)$row['skipped']];
+	}
+
 	public static function forPage(Page $page): array|null
 	{
 		$result = static::all()[Storage::pageKey($page, App::instance()->language()?->code())] ?? null;
