@@ -24,7 +24,7 @@ In the page preview, editors see what to fix. Errors stay until they're fixed. W
 
 In the Accessibility view you can check all pages at once:
 
-![The Accessibility area in the Kirby Panel: stats saying "41/50 pages without alerts", "50/50 checked", "5 errors" and "14 warnings". Below, a table lists each page with when it was last checked and its number of errors and warnings, starting with "Aliquip aute" at 2 errors and 1 warning.](.github/overview.png)
+![The Accessibility area in the Kirby Panel: stats saying "41/50 pages without alerts", "50/50 checked", "5 errors" and "14 warnings". Below, a table lists each page with when it was last checked and its number of errors and warnings, starting with "Aliquip aute" at 2 errors and 1 warning.](.github/overview-1.3.0.png)
 
 ## Storage
 
