@@ -72,7 +72,9 @@
 		}
 
 		document.addEventListener("ed11yResults", async (event) => {
-			if (config.sync?.report) {
+			const expected = new URLSearchParams(window.location.search).get("editoria11y-key");
+
+			if (config.sync?.report && (expected === null || expected === config.sync.key)) {
 				await report(event.detail.results);
 			}
 

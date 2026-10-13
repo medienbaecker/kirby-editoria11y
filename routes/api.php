@@ -61,6 +61,13 @@ return [
 		'action'  => function () use ($pageKey) {
 			$input    = $this->kirby()->request()->data();
 			$key      = $pageKey($this->kirby(), $this->user(), $input);
+
+			if (($input['skipped'] ?? false) === true) {
+				Results::save($key, 0, 0, [], true);
+
+				return ['status' => 'ok'];
+			}
+
 			$errors   = $input['errors'] ?? null;
 			$warnings = $input['warnings'] ?? null;
 			$tests    = $input['tests'] ?? [];

@@ -61,6 +61,11 @@ class Storage
 			$database->execute('PRAGMA user_version = 2');
 		}
 
+		if ($version < 3) {
+			$database->execute('ALTER TABLE results ADD COLUMN skipped INTEGER NOT NULL DEFAULT 0');
+			$database->execute('PRAGMA user_version = 3');
+		}
+
 		return static::$database = $database;
 	}
 

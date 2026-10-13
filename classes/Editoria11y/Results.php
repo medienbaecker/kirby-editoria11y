@@ -8,18 +8,18 @@ use Kirby\Cms\User;
 
 class Results
 {
-	public static function save(string $page, int $errors, int $warnings, array $tests): bool
+	public static function save(string $page, int $errors, int $warnings, array $tests, bool $skipped = false): bool
 	{
 		return Storage::database()->execute(
-			'INSERT OR REPLACE INTO results (page, errors, warnings, tests, checked) VALUES (?, ?, ?, ?, ?)',
-			[$page, $errors, $warnings, json_encode($tests), date('c')]
+			'INSERT OR REPLACE INTO results (page, errors, warnings, tests, checked, skipped) VALUES (?, ?, ?, ?, ?, ?)',
+			[$page, $errors, $warnings, json_encode($tests), date('c'), (int)$skipped]
 		);
 	}
 
 	public static function all(): array
 	{
 		$rows = Storage::database()->query(
-			'SELECT page, errors, warnings, tests, checked FROM results',
+			'SELECT page, errors, warnings, tests, checked, skipped FROM results',
 			[],
 			['fetch' => 'array', 'iterator' => 'array']
 		);
@@ -32,6 +32,7 @@ class Results
 				'warnings' => (int)$row['warnings'],
 				'tests'    => json_decode($row['tests'], true) ?? [],
 				'checked'  => $row['checked'],
+				'skipped'  => (bool)$row['skipped'],
 			];
 		}
 
@@ -40,7 +41,9 @@ class Results
 
 	public static function forPage(Page $page): array|null
 	{
-		return static::all()[Storage::pageKey($page, App::instance()->language()?->code())] ?? null;
+		$result = static::all()[Storage::pageKey($page, App::instance()->language()?->code())] ?? null;
+
+		return $result['skipped'] ?? false ? null : $result;
 	}
 
 	public static function rows(User $user): array
@@ -58,6 +61,10 @@ class Results
 			$key    = Storage::pageKey($page, $language);
 			$result = $results[$key] ?? null;
 
+			if ($result['skipped'] ?? false) {
+				continue;
+			}
+
 			$rows[] = [
 				'id'       => $key,
 				'title'    => $page->title()->value(),
@@ -65,6 +72,8 @@ class Results
 				'warnings' => $result['warnings'] ?? null,
 				'checked'  => $result['checked'] ?? null,
 				'link'     => $page->panel()->url(true),
+				'page'     => $page->uuid()?->toString() ?? $page->id(),
+				'language' => $language,
 				'url'      => $page->url($language),
 			];
 		}

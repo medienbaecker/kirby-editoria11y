@@ -147,7 +147,9 @@ export default {
 
 			return [...this.rows].sort((a, b) => {
 				if ((a.checked === null) !== (b.checked === null)) {
-					return a.checked === null ? 1 : -1;
+					const uncheckedFirst = this.sortBy === "checked" && this.sortDirection === "asc";
+
+					return (a.checked === null) === uncheckedFirst ? -1 : 1;
 				}
 
 				if (this.sortBy === "errors") {
@@ -227,25 +229,33 @@ export default {
 			this.pagination.page = 1;
 		},
 		async scan() {
-			const queue = this.rows.map((row) => row.url);
+			const queue = [...this.rows];
 
 			this.scanning = true;
 			this.stopped = false;
 			this.done = 0;
 			this.total = queue.length;
 
+			const refresh = setInterval(() => this.$panel.view.refresh(), 2000);
+
 			const worker = async () => {
 				while (queue.length > 0 && this.stopped === false) {
-					await this.check(queue.shift());
-					this.done++;
+					const row = queue.shift();
 
-					if (this.done % 5 === 0) {
-						await this.$panel.view.refresh();
+					if ((await this.check(row)) === "skipped") {
+						await this.$api.post("editoria11y/results", {
+							page: row.page,
+							language: row.language,
+							skipped: true,
+						});
 					}
+
+					this.done++;
 				}
 			};
 
-			await Promise.all([worker(), worker(), worker()]);
+			await Promise.all(Array.from({ length: 4 }, worker));
+			clearInterval(refresh);
 			await this.$panel.reload();
 
 			if (this.stopped === false) {
@@ -259,15 +269,15 @@ export default {
 		stop() {
 			this.stopped = true;
 		},
-		check(url) {
+		check(row) {
 			return new Promise((resolve) => {
 				const frame = document.createElement("iframe");
 
-				const finish = () => {
+				const finish = (status = "checked") => {
 					window.removeEventListener("message", onMessage);
 					clearTimeout(timeout);
 					frame.remove();
-					resolve();
+					resolve(status);
 				};
 
 				const onMessage = (event) => {
@@ -280,14 +290,20 @@ export default {
 
 				window.addEventListener("message", onMessage);
 				frame.addEventListener("load", () => {
-					if (frame.contentWindow.location.search.includes("editoria11y=scan") === false) {
-						finish();
+					try {
+						const config = frame.contentDocument.getElementById("kirby-editoria11y");
+
+						if (config === null || JSON.parse(config.textContent).sync?.key !== row.id) {
+							finish("skipped");
+						}
+					} catch {
+						finish("skipped");
 					}
 				});
 				frame.setAttribute("aria-hidden", "true");
 				frame.setAttribute("tabindex", "-1");
 				frame.className = "k-editoria11y-scan-frame";
-				frame.src = `${url}${url.includes("?") ? "&" : "?"}editoria11y=scan`;
+				frame.src = `${row.url}${row.url.includes("?") ? "&" : "?"}editoria11y=scan&editoria11y-key=${encodeURIComponent(row.id)}`;
 				document.body.append(frame);
 			});
 		},
