@@ -3,7 +3,7 @@
     "description": "Editoria11y accessibility checker for Kirby editors",
     "license": "GPL-2.0-only",
     "type": "kirby-plugin",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "authors": [
         {
             "name": "Thomas Günther",
@@ -12,6 +12,7 @@
     ],
     "require": {
         "php": "^8.2",
+        "getkirby/cms": "^5.0",
         "getkirby/composer-installer": "^1.2"
     },
     "config": {
