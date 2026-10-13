@@ -42,7 +42,7 @@ In the Accessibility view you can check all pages at once:
 ],
 ```
 
-`pages` takes a function that returns a pages collection. The example reuses a `sitemap` collection the site already has, which leaves out pages that aren't real pages, like a test bed or sections that only exist as anchors on another page.
+The `pages` option takes a function that returns a pages collection. I tend to have a `sitemap` collection in my sites that I also use for, well, the sitemap.
 
 ## License
 
