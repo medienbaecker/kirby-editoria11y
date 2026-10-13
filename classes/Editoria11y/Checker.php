@@ -7,6 +7,7 @@ use Kirby\Cms\App;
 use Kirby\Cms\Page;
 use Kirby\Cms\User;
 use Kirby\Filesystem\F;
+use Kirby\Toolkit\I18n;
 use Kirby\Toolkit\Tpl;
 use Throwable;
 
@@ -16,7 +17,7 @@ class Checker
 	{
 		$position = strripos($html, '</body>');
 
-		if ($position === false || str_contains($html, 'id="kirby-editoria11y"') === true) {
+		if ($position === false) {
 			return $html;
 		}
 
@@ -32,10 +33,11 @@ class Checker
 	public static function markup(Page $page): string
 	{
 		$kirby = $page->kirby();
+		$scan  = $kirby->request()->get('editoria11y') === 'scan';
 
-		// Keeps responses for logged-in users out of the page cache, so the
-		// markup can never be served to visitors from there.
-		$kirby->response()->usesCookie($kirby->option('session.cookieName', 'kirby_session'));
+		if ($scan === false && $kirby->request()->get('_preview') !== 'true') {
+			return '';
+		}
 
 		$user = $kirby->user();
 
@@ -46,8 +48,13 @@ class Checker
 		$plugin   = $kirby->plugin('medienbaecker/editoria11y');
 		$language = static::language($user);
 
+		// The checker reads attributes and styles, never the files themselves
+		if ($scan === true) {
+			$kirby->response()->header('Content-Security-Policy', "img-src data:; media-src 'none'; font-src 'none'; frame-src 'none'");
+		}
+
 		return Tpl::load(__DIR__ . '/../../views/markup.php', [
-			'config'  => json_encode(static::config($page, $user, $language), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
+			'config'  => json_encode([...static::config($page, $user, $language), 'scan' => $scan], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP),
 			'scripts' => [
 				$plugin->asset('editoria11y/lang/' . $language . '.umd.js')->url(),
 				$plugin->asset('editoria11y/ed11y.umd.min.js')->url(),
@@ -83,28 +90,46 @@ class Checker
 				...$config,
 			],
 			'lang' => 'Ed11yLang' . ucfirst($language),
+			'strings' => [
+				'WARNING'  => I18n::translate('medienbaecker.editoria11y.warning', null, $user->language()),
+				'WARNINGS' => I18n::translate('medienbaecker.editoria11y.warnings', null, $user->language()),
+			],
 			'css'  => $kirby->plugin('medienbaecker/editoria11y')->asset('editoria11y/editoria11y.min.css')->url(),
 		];
 
-		if (option('medienbaecker.editoria11y.sync') === true) {
-			$contentLanguage = $kirby->language()?->code();
-			$key             = Dismissals::pageKey($page, $contentLanguage);
+		$contentLanguage = $kirby->language()?->code();
+		$key             = Storage::pageKey($page, $contentLanguage);
 
-			try {
-				$data['sync'] = [
-					'key'        => $key,
-					'page'       => $page->uuid()?->toString() ?? $page->id(),
-					'language'   => $contentLanguage,
-					'api'        => $kirby->url('api') . '/editoria11y/dismissals',
-					'csrf'       => $kirby->csrf(),
-					'dismissals' => (object)Dismissals::forPage($key, $user),
-				];
-			} catch (Throwable) {
-				// Without a working database, dismissals stay in the browser
-			}
+		try {
+			$data['sync'] = [
+				'key'        => $key,
+				'page'       => $page->uuid()?->toString() ?? $page->id(),
+				'language'   => $contentLanguage,
+				'api'        => $kirby->url('api') . '/editoria11y',
+				'report'     => static::showsPublishedContent($page, $contentLanguage),
+				'csrf'       => $kirby->csrf(),
+				'dismissals' => (object)Dismissals::forPage($key, $user),
+			];
+		} catch (Throwable) {
+			// Without a working database, dismissals stay in the browser
 		}
 
 		return $data;
+	}
+
+	/**
+	 * Results of unsaved changes must not overwrite those of the published page
+	 */
+	protected static function showsPublishedContent(Page $page, string|null $language): bool
+	{
+		if ($page->kirby()->request()->get('_version') !== 'changes') {
+			return true;
+		}
+
+		$changes  = $page->version('changes');
+		$language ??= 'default';
+
+		return $changes->exists($language) === false || $changes->isIdentical('latest', $language);
 	}
 
 	public static function language(User $user): string

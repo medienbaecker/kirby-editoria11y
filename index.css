@@ -1,0 +1,1 @@
+.k-editoria11y-view th.k-table-column:has(.k-editoria11y-sort){padding:0}.k-editoria11y-sort{display:flex;white-space:nowrap;align-items:center;justify-content:space-between;gap:var(--spacing-1)}.k-editoria11y-view [data-align=right] .k-editoria11y-sort{justify-content:flex-end}.k-editoria11y-scan-frame{position:fixed;top:0;left:-10000px;width:1280px;height:800px;border:0}

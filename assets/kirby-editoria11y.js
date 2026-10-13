@@ -9,40 +9,77 @@
 		});
 	}
 
+	const post = (path, body) =>
+		fetch(`${config.sync.api}/${path}`, {
+			method: "POST",
+			credentials: "same-origin",
+			headers: {
+				"Content-Type": "application/json",
+				"X-CSRF": config.sync.csrf,
+			},
+			body: JSON.stringify({
+				page: config.sync.page,
+				language: config.sync.language,
+				...body,
+			}),
+		}).then((response) => {
+			if (!response.ok) {
+				console.warn(`Editoria11y: the ${path} could not be saved`, response.status);
+			}
+		});
+
+	const report = async (results) => {
+		const open = results.filter((result) => !result.dismissalStatus);
+		const tests = {};
+
+		for (const result of open) {
+			tests[result.test] = (tests[result.test] ?? 0) + 1;
+		}
+
+		await post("results", {
+			errors: open.filter((result) => result.type === "error").length,
+			warnings: open.filter((result) => result.type !== "error").length,
+			tests,
+		});
+	};
+
 	const start = () => {
+		const lang = window[config.lang].lang;
+		Object.assign(lang.strings, config.strings);
+
 		const options = {
 			...config.options,
-			lang: window[config.lang].lang,
+			lang,
 			cssUrls: [config.css],
 			panelAttachTo: document.body,
 		};
+
+		if (config.scan) {
+			options.alertMode = "headless";
+		}
 
 		if (config.sync) {
 			options.currentPage = config.sync.key;
 			options.syncedDismissals = config.sync.dismissals;
 
-			document.addEventListener("ed11yDismissalUpdate", async (event) => {
-				const response = await fetch(config.sync.api, {
-					method: "POST",
-					credentials: "same-origin",
-					headers: {
-						"Content-Type": "application/json",
-						"X-CSRF": config.sync.csrf,
-					},
-					body: JSON.stringify({
-						page: config.sync.page,
-						language: config.sync.language,
-						test: event.detail.dismissTest,
-						key: event.detail.dismissKey,
-						action: event.detail.dismissAction,
-					}),
+			document.addEventListener("ed11yDismissalUpdate", (event) => {
+				post("dismissals", {
+					test: event.detail.dismissTest,
+					key: event.detail.dismissKey,
+					action: event.detail.dismissAction,
 				});
-
-				if (!response.ok) {
-					console.warn("Editoria11y: the dismissal could not be saved", response.status);
-				}
 			});
 		}
+
+		document.addEventListener("ed11yResults", async (event) => {
+			if (config.sync?.report) {
+				await report(event.detail.results);
+			}
+
+			if (config.scan) {
+				window.parent.postMessage("editoria11y:checked", window.location.origin);
+			}
+		});
 
 		new Ed11y.Ed11y(options);
 	};
