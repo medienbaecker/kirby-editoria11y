@@ -8,7 +8,7 @@
 						<k-button
 							:icon="scanning ? 'cancel' : 'refresh'"
 							:theme="scanning ? 'negative' : null"
-							:text="scanLabel"
+							:text="scanning ? $t('medienbaecker.editoria11y.stop') : $t('medienbaecker.editoria11y.scan')"
 							:disabled="live.length === 0"
 							variant="filled"
 							size="sm"
@@ -96,7 +96,6 @@ export default {
 			scanning: false,
 			stopped: false,
 			done: 0,
-			total: 0,
 			sortBy: "errors",
 			sortDirection: "desc",
 			pagination: {
@@ -228,13 +227,6 @@ export default {
 				checked: row.checked === null ? "" : this.relative(row.checked),
 			}));
 		},
-		scanLabel() {
-			if (this.scanning) {
-				return `${this.$t("medienbaecker.editoria11y.stop")} · ${this.done}/${this.total}`;
-			}
-
-			return this.$t("medienbaecker.editoria11y.scan");
-		},
 	},
 	methods: {
 		relative(date) {
@@ -328,7 +320,6 @@ export default {
 			this.scanning = true;
 			this.stopped = false;
 			this.done = 0;
-			this.total = queue.length;
 
 			try {
 				await Promise.all(Array.from({ length: 4 }, worker));
