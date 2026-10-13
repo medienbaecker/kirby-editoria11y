@@ -6,6 +6,7 @@ use Closure;
 use Kirby\Cms\Page;
 use Kirby\Database\Database;
 use Kirby\Filesystem\Dir;
+use Kirby\Filesystem\F;
 
 class Storage
 {
@@ -24,6 +25,12 @@ class Storage
 		}
 
 		Dir::make(dirname($file));
+
+		$legacy = dirname($file) . '/dismissals.sqlite';
+
+		if (F::exists($file) === false && F::exists($legacy) === true) {
+			F::move($legacy, $file);
+		}
 
 		$database = new Database([
 			'id'       => 'editoria11y',

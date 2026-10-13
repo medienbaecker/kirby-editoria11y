@@ -21,7 +21,7 @@ Kirby::plugin('medienbaecker/editoria11y', [
 			fn (Page $page) => $page->hasMethod('isModule') === false ||
 				($page->isModule() === false && $page->isModuleContainer() === false)
 		),
-		'database' => fn () => kirby()->root('logs') . '/editoria11y/dismissals.sqlite',
+		'database' => fn () => kirby()->root('logs') . '/editoria11y/editoria11y.sqlite',
 	],
 	'areas'        => require __DIR__ . '/areas/editoria11y.php',
 	'translations' => require __DIR__ . '/translations.php',
