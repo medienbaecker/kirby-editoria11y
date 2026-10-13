@@ -5,6 +5,7 @@ use Kirby\Cms\Site;
 use Kirby\Toolkit\I18n;
 use Medienbaecker\Editoria11y\Checker;
 use Medienbaecker\Editoria11y\Results;
+use Medienbaecker\Editoria11y\Storage;
 
 $previewButton = function (Page|null $page, string $panelUrl): array|null {
 	if ($page === null || $page->previewUrl() === null) {
@@ -24,22 +25,29 @@ $previewButton = function (Page|null $page, string $panelUrl): array|null {
 		return $button;
 	}
 
+	$button = [...$button, ...Results::button($page, $user)];
+
 	try {
-		$result = Results::forPage($page);
+		$outdated = Results::isOutdated($page);
 	} catch (Throwable) {
 		return $button;
 	}
 
-	$count = ($result['errors'] ?? 0) + ($result['warnings'] ?? 0);
-
-	if ($count === 0) {
+	if ($outdated === false) {
 		return $button;
 	}
 
+	$language = kirby()->language()?->code();
+
 	return [
+		'component' => 'k-editoria11y-preview-button',
 		...$button,
-		'badge' => ['text' => (string)$count, 'theme' => $result['errors'] > 0 ? 'negative' : 'notice'],
-		'title' => I18n::translate('preview') . ' · ' . I18n::translateCount('medienbaecker.editoria11y.button.issues', $count, $user->language()),
+		'check' => [
+			'id'       => Storage::pageKey($page, $language),
+			'page'     => $page->uuid()?->toString() ?? $page->id(),
+			'language' => $language,
+			'url'      => $page->url($language),
+		],
 	];
 };
 

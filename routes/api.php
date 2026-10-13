@@ -33,6 +33,19 @@ $pageKey = function (App $kirby, User $user, array $input): string {
 
 return [
 	[
+		'pattern' => 'editoria11y/button',
+		'method'  => 'GET',
+		'action'  => function () {
+			$page = $this->kirby()->page($this->requestQuery('page', ''));
+
+			if (!$page instanceof Page || Checker::isEnabled($page, $this->user()) === false) {
+				throw new NotFoundException('The page could not be found');
+			}
+
+			return Results::button($page, $this->user());
+		},
+	],
+	[
 		'pattern' => 'editoria11y/dismissals',
 		'method'  => 'POST',
 		'action'  => function () use ($pageKey) {

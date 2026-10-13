@@ -5,6 +5,8 @@ namespace Medienbaecker\Editoria11y;
 use Kirby\Cms\App;
 use Kirby\Cms\Page;
 use Kirby\Cms\User;
+use Kirby\Toolkit\I18n;
+use Throwable;
 
 class Results
 {
@@ -44,6 +46,44 @@ class Results
 		$result = static::all()[Storage::pageKey($page, App::instance()->language()?->code())] ?? null;
 
 		return $result['skipped'] ?? false ? null : $result;
+	}
+
+	public static function isOutdated(Page $page): bool
+	{
+		$language = App::instance()->language()?->code();
+		$result   = static::all()[Storage::pageKey($page, $language)] ?? null;
+
+		if ($result === null) {
+			return true;
+		}
+
+		if ($result['skipped'] === true) {
+			return false;
+		}
+
+		return $page->modified(null, null, $language) > strtotime($result['checked']);
+	}
+
+	public static function button(Page $page, User $user): array
+	{
+		$button = ['badge' => null, 'title' => I18n::translate('preview')];
+
+		try {
+			$result = static::forPage($page);
+		} catch (Throwable) {
+			return $button;
+		}
+
+		$count = ($result['errors'] ?? 0) + ($result['warnings'] ?? 0);
+
+		if ($count === 0) {
+			return $button;
+		}
+
+		return [
+			'badge' => ['text' => (string)$count, 'theme' => $result['errors'] > 0 ? 'negative' : 'notice'],
+			'title' => I18n::translate('preview') . ' · ' . I18n::translateCount('medienbaecker.editoria11y.button.issues', $count, $user->language()),
+		];
 	}
 
 	public static function rows(User $user): array

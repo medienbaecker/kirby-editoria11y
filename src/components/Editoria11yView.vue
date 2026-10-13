@@ -60,6 +60,8 @@
 </template>
 
 <script>
+import check from "../check.js";
+
 export default {
 	props: {
 		rows: {
@@ -242,14 +244,7 @@ export default {
 				while (queue.length > 0 && this.stopped === false) {
 					const row = queue.shift();
 
-					if ((await this.check(row)) === "skipped") {
-						await this.$api.post("editoria11y/results", {
-							page: row.page,
-							language: row.language,
-							skipped: true,
-						});
-					}
-
+					await check(row, this.$panel.api);
 					this.done++;
 				}
 			};
@@ -268,44 +263,6 @@ export default {
 		},
 		stop() {
 			this.stopped = true;
-		},
-		check(row) {
-			return new Promise((resolve) => {
-				const frame = document.createElement("iframe");
-
-				const finish = (status = "checked") => {
-					window.removeEventListener("message", onMessage);
-					clearTimeout(timeout);
-					frame.remove();
-					resolve(status);
-				};
-
-				const onMessage = (event) => {
-					if (event.source === frame.contentWindow && event.data === "editoria11y:checked") {
-						finish();
-					}
-				};
-
-				const timeout = setTimeout(finish, 8000);
-
-				window.addEventListener("message", onMessage);
-				frame.addEventListener("load", () => {
-					try {
-						const config = frame.contentDocument.getElementById("kirby-editoria11y");
-
-						if (config === null || JSON.parse(config.textContent).sync?.key !== row.id) {
-							finish("skipped");
-						}
-					} catch {
-						finish("skipped");
-					}
-				});
-				frame.setAttribute("aria-hidden", "true");
-				frame.setAttribute("tabindex", "-1");
-				frame.className = "k-editoria11y-scan-frame";
-				frame.src = `${row.url}${row.url.includes("?") ? "&" : "?"}editoria11y=scan&editoria11y-key=${encodeURIComponent(row.id)}`;
-				document.body.append(frame);
-			});
 		},
 	},
 };
