@@ -16,15 +16,15 @@ Requires Kirby 5. No configuration needed. The checker is automatically set to t
 
 The preview button automatically shows the number of alerts for the current page. Opening a page in the Panel checks it in the background:
 
-![The header of the "About us" page in the Panel. The preview button has a red badge with a 4.](.github/preview-button.png)
+![The header of the "About us" page in the Panel. The preview button has a red badge with a 4.](.github/badge.png)
 
 In the page preview, editors see what to fix. Errors stay until they're fixed. Warnings can be marked OK, which hides them for all editors.
 
-![The Panel preview of "About us" with Editoria11y markers on the text and an open alert on an image: "Invalid HTML: image has no alt attribute", with advice on how to fix it.](.github/preview.png)
+![The Panel preview of "About us" with Editoria11y markers on the text and an open alert on an image: "Invalid HTML: image has no alt attribute", with advice on how to fix it.](.github/preview-alert.png)
 
 In the Accessibility view you can check all pages at once:
 
-![The Accessibility area in the Kirby Panel: stats saying "41/50 pages without alerts", "50/50 checked", "5 errors" and "14 warnings". Below, a table lists each page with when it was last checked and its number of errors and warnings, starting with "Aliquip aute" at 2 errors and 1 warning.](.github/overview-1.3.0.png)
+https://github.com/user-attachments/assets/69380f9f-a5f5-4aea-b545-204072a4196b
 
 ## Storage
 
