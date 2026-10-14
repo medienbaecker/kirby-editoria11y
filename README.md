@@ -53,4 +53,4 @@ The `pages` option takes a function that returns a pages collection. I tend to h
 
 ## License
 
-GPL-2.0. Bundles Editoria11y 3.0.2 ([source](https://github.com/itmaybejj/editoria11y/tree/3.0.2)).
+GPL-2.0, because it bundles Editoria11y 3.0.2 ([source](https://github.com/itmaybejj/editoria11y/tree/3.0.2)), which is GPL-2.0 and includes parts of [Sa11y](https://github.com/ryersondmp/sa11y) under the MIT License. Copyright (c) 2026 Thomas Günther.
