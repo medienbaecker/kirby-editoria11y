@@ -15,7 +15,7 @@ $previewButton = function (Page|null $page, string $panelUrl): array|null {
 	$button = [
 		'class' => 'k-preview-view-button',
 		'icon'  => 'window',
-		'link'  => $panelUrl . '/preview/changes',
+		'link'  => $panelUrl . '/preview/form',
 		'title' => I18n::translate('preview'),
 	];
 
