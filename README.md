@@ -10,7 +10,7 @@ composer require medienbaecker/kirby-editoria11y
 
 Or download this repository and put it in `site/plugins/kirby-editoria11y`.
 
-Requires Kirby 5. No configuration needed. The checker is automatically set to the logged-in account's Panel language.
+Requires Kirby 6. For Kirby 5, use version 1. No configuration needed. The checker is automatically set to the logged-in account's Panel language.
 
 ## How it works
 
