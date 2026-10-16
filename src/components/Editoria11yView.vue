@@ -104,9 +104,6 @@ export default {
 			},
 		};
 	},
-	beforeDestroy() {
-		this.leave();
-	},
 	beforeUnmount() {
 		this.leave();
 	},
