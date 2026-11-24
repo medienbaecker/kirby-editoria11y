@@ -34,8 +34,8 @@ Check results and warnings marked OK are stored in an SQLite database, per page 
 
 ```php
 'medienbaecker.editoria11y' => [
-	// Pages in the overview (default: all pages)
-	'pages' => fn () => collection('sitemap'),
+	// Who sees the checker: true, false or a function (default: Panel users who may update the page)
+	'enabled' => fn ($page, $user) => $user->isAdmin(),
 
 	// Passed to Editoria11y, e.g. to ignore alerts caused by templates
 	'config' => [
@@ -44,8 +44,8 @@ Check results and warnings marked OK are stored in an SQLite database, per page 
 		],
 	],
 
-	// Who sees the checker (default: Panel users who may update the page)
-	'enabled' => fn ($page, $user) => $user->isAdmin(),
+	// Pages in the overview (default: all pages)
+	'pages' => fn () => collection('sitemap'),
 
 	// Path to the SQLite database
 	'database' => fn () => kirby()->root('logs') . '/editoria11y/editoria11y.sqlite',
