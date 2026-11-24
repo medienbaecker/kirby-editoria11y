@@ -44,6 +44,9 @@ Check results and warnings marked OK are stored in an SQLite database, per page 
 		],
 	],
 
+	// Who sees the checker (default: Panel users who may update the page)
+	'enabled' => fn ($page, $user) => $user->isAdmin(),
+
 	// Path to the SQLite database
 	'database' => fn () => kirby()->root('logs') . '/editoria11y/editoria11y.sqlite',
 ],
