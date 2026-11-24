@@ -15,7 +15,7 @@ Kirby::plugin('medienbaecker/editoria11y', [
 	'options' => [
 		'enabled'  => fn (Page $page, User $user) =>
 			$user->role()->permissions()->for('access', 'panel') &&
-			$page->permissions()->can('update'),
+			$page->guards()->isAvailable('update'),
 		'config'   => [],
 		'pages'    => fn () => site()->index()->filter(
 			fn (Page $page) => $page->hasMethod('isModule') === false ||
